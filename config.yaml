@@ -1,0 +1,6 @@
+# mariaDB for writing/select data
+my_addr: 222.106.144.147
+my_port: 3308
+my_user: root
+my_pw: xhdltmaltm
+my_db: toy_lotto
