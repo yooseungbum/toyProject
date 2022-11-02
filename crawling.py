@@ -1,13 +1,15 @@
 import urllib
 from collections import Counter
 import numpy as np
+import pandas as pd
 import requests
+import db_utils as db
+import sys
 from bs4 import BeautifulSoup as bs
-
 
 def lotto_crawling():
     minDrwNo = 1            #취득하고 싶은 회차 시작
-    maxDrwNo = 2            #취득하고 싶은 회차 종료  (최종 : 1038 회 (2022-10-23))
+    maxDrwNo = 1038            #취득하고 싶은 회차 종료  (최종 : 1038 회 (2022-10-23))
     drwtNo1 = []            #1등 첫번째 번호
     drwtNo2 = []            #1등 두번째 번호
     drwtNo3 = []            #1등 세번째 번호
@@ -45,22 +47,28 @@ def lotto_crawling():
         firstPrzwnerCo.append((lottoNo['firstPrzwnerCo']))  #1등 당첨인원
         # 로또 1등 번호를 하나의 리스트로 머지
         h = np.hstack((drwtNo1[i-1], drwtNo2[i-1], drwtNo3[i-1], drwtNo4[i-1], drwtNo5[i-1], drwtNo6[i-1]))
-        drwtNo.append(h)
 
-    # 결과 출력
-    print(drwtNo)
+    df_lotto = pd.DataFrame([drwNoDate, totSellamnt, firstAccumamnt, firstWinamnt, firstPrzwnerCo, drwtNo1, drwtNo2, drwtNo3, drwtNo4, drwtNo5, drwtNo6]).T
+    df_lotto.columns = ['time', 'totSellamnt', 'firstAccumamnt', 'firstWinamnt', 'firstPrzwnerCo', 'no1', 'no2', 'no3', 'no4', 'no5', 'no6']
+
+    try:
+        df_lotto.to_sql(name="lotto_info", con=db.connection, if_exists="replace", index=False)
+        print("lotto_info insert complete")
+    except Exception as err:
+        print("lotto_info insert fail")
+        print(err)
 
 def powerBall_crawling():
 
     minPage = 1         # crawling 할 시작 페이지
-    maxPage = 1         # crawling 할 마지막 페이지 (2004.2.19 101페이지까지 존재)
+    maxPage = 101         # crawling 할 마지막 페이지 (2004.2.19 101페이지까지 존재)
     drwDate = []        # 추첨일자
     drwpNo1 = []        # 당첨 1번째 번호
-    drwpNo2 = []        # 당첨 1번째 번호
-    drwpNo3 = []        # 당첨 1번째 번호
-    drwpNo4 = []        # 당첨 1번째 번호
-    drwpNo5 = []        # 당첨 1번째 번호
-    drwpNo6 = []        # 당첨 1번째 번호
+    drwpNo2 = []        # 당첨 2번째 번호
+    drwpNo3 = []        # 당첨 3번째 번호
+    drwpNo4 = []        # 당첨 4번째 번호
+    drwpNo5 = []        # 당첨 5번째 번호
+    drwpNo6 = []        # 당첨 6번째 번호
     drwpNo = []         # 당첨 전체 번호
     drwResult = []      # 당첨 결과
     firstWinamnt = []   # 1등 당첨금
@@ -78,7 +86,7 @@ def powerBall_crawling():
             td_list = tr.find_all('td')
             for td, item in enumerate(td_list):
                 if td == 1:
-                    drwDate.append(item.text)
+                    drwDate.append(item.text.split(' ')[0].replace('.', '-'))
                 if td == 2:
                     drwpNo1.append(item.text.split('\n')[2])
                     drwpNo2.append(item.text.split('\n')[3])
@@ -92,8 +100,33 @@ def powerBall_crawling():
                 if td == 4:
                     firstWinamnt.append(item.text.split(',')[0] + str(',000,000'))
 
-    print(drwpNo1)
+    df_powerBall = pd.DataFrame([drwDate, drwResult, firstWinamnt, drwpNo1, drwpNo2, drwpNo3, drwpNo4, drwpNo5, drwpNo6]).T
+    df_powerBall.columns = ['time', 'result', 'winAmnt', 'no1', 'no2', 'no3', 'no4', 'no5', 'powerball']
 
+    print(df_powerBall)
 
+    try:
+        df_powerBall.to_sql(name="powreball_info", con=db.connection, if_exists="replace", index=False)
+        print("powerBall_info insert complete")
+    except Exception as err:
+        print("powerBall_info insert fail")
+        print(err)
+
+def run():
+    # DB 연결
+    try:
+        db.mysql_connect()
+        print("mariaDB connected")
+    except Exception as err:
+        print("connecting mariaDB error!!")
+        print(err)
+        sys.exit()
+
+    lotto_crawling()
+    powerBall_crawling()
+
+    # db 연결 종료
+    db.db_disconnect()
+    print("mariaDB disconnected")
 
 
