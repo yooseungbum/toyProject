@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup as bs
 
 def lotto_crawling():
     minDrwNo = 1            #취득하고 싶은 회차 시작
-    maxDrwNo = 1038            #취득하고 싶은 회차 종료  (최종 : 1038 회 (2022-10-23))
+    maxDrwNo = 1039            #취득하고 싶은 회차 종료  (최종 : 1039 회 (2022-10-29))
     drwtNo1 = []            #1등 첫번째 번호
     drwtNo2 = []            #1등 두번째 번호
     drwtNo3 = []            #1등 세번째 번호
@@ -98,12 +98,10 @@ def powerBall_crawling():
                 if td == 3:
                     drwResult.append(item.text)
                 if td == 4:
-                    firstWinamnt.append(item.text.split(',')[0] + str(',000,000'))
+                    firstWinamnt.append(item.find('span', 'dollor').text.split(' ')[1])
 
     df_powerBall = pd.DataFrame([drwDate, drwResult, firstWinamnt, drwpNo1, drwpNo2, drwpNo3, drwpNo4, drwpNo5, drwpNo6]).T
     df_powerBall.columns = ['time', 'result', 'winAmnt', 'no1', 'no2', 'no3', 'no4', 'no5', 'powerball']
-
-    print(df_powerBall)
 
     try:
         df_powerBall.to_sql(name="powreball_info", con=db.connection, if_exists="replace", index=False)
